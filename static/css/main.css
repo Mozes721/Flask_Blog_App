@@ -1,0 +1,14 @@
+body {
+    background-color: #F3ECE2;
+}
+#app-name {
+    font-size: 35px;
+    font-weight: bold;
+    color:#a3def3;
+}
+
+#blog-text {
+    font-size: 20px;
+    font-family: italic;
+    color:#a3def3;
+}
