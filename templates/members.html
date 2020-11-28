@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}You have logged In{% endblock %}
+
+{% block content %}
+{% with messages = get_flashed_messages()  %}
+  {% if messages %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      {% for user in messages %}
+      <li class="breadcrumb-item active" aria-current="page">{{ user }}</li>
+      {% endfor %}
+    </ol>
+  </nav>
+  {% endif %}
+  {% endwith %}
+  
+{% endblock %}
