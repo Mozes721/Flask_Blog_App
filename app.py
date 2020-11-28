@@ -7,10 +7,10 @@ from flask_migrate import Migrate, MigrateCommand
 app = Flask(__name__)
 #set the timeline the session can last
 app.permanent_session_lifetime = timedelta(days=5)
-SECRET_KEY = '\xb6\x05s\x15&p\xec\xb5qO4\xd5\xb5?\xf2\x87H\x11m`\xbb\xc5\x15P'
+SECRET_KEY = 'secret key'
 
 #Configure Flask by providing the PostgreSQL URI 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Asebomu12@localhost/Mozes721'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:password@localhost/database'
 #needs to be placed after app is created
 
 
