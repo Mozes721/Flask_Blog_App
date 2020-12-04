@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, session, redirect, url_for, flash
-import hashlib
+from passlib.hash import sha256_crypt
 from datetime import timedelta
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
@@ -29,7 +29,9 @@ manager.add_command('db', MigrateCommand)
 def index():
     #set the session as permanent with the given lifetime
     session.permanent = True
-    return render_template('index.html')
+    if "username" not in session:
+        #status(disabled) so that logout and your posts are only accesible ones logged in
+        return render_template('index.html', status="disabled")
 
 #register route
 @app.route('/register', methods= ["POST", "GET"])
@@ -43,27 +45,29 @@ def register():
             email = request.form.get("email")
             username = request.form.get("username")
             password = request.form.get("password")
+            #encrypt password 
+            hashed = sha256_crypt.encrypt(password)
             #if empty flash a message
             if email == '' or username == '' or password == '':
                 flash("Please enter all input fields!")
-                return redirect(url_for("register"))
+                return redirect(url_for("register", status="disabled"))
             #check if user already in database
             if db.session.query(UserInfo.id).filter_by(email = email).scalar() or db.session.query(UserInfo.id).filter_by(username = username).scalar() is not None:
                 flash("The email or username already is being used please choose a different one or login if your an existing user")
-                return redirect(url_for("register"))
+                return redirect(url_for("register", status="disabled"))
             #if not add the new user and redirect
-            register_user = UserInfo(email = email, username = username, password = password)
+            register_user = UserInfo(email = email, username = username, password = hashed)
             db.session.add(register_user)
             db.session.commit()
             #create a session while user logged in
             session["username"] = username
             flash("You have logged in as %s" % username)
             return redirect(url_for('members', usr=username))
-        return render_template('register.html')
+        return render_template('register.html', status="disabled")
 
 
 #login route
-@app.route('/login', methods= ['post', 'get'])
+@app.route('/login', methods= ["POST", "GET"])
 def login():
     #check if user already in session(logged in)
     if "username" in session:
@@ -72,46 +76,51 @@ def login():
         return render_template("login.html")
     else:
         if request.method == "POST":
-            print("Hello im posting!")
             username = request.form.get("username")
             password = request.form.get("password")
+            hashed = sha256_crypt.encrypt(password)
             if username == '' or password == '':
                 flash("Please enter all input fields!")
-                return redirect(url_for("login"))
+                return redirect(url_for("login", status="disabled"))
             #check if user already exists in database
             if db.session.query(UserInfo.id).filter_by(username = username).scalar():
                 #check if password match specific user
-                if db.session.query(UserInfo.id).filter_by(password = password).scalar():
+                if db.session.query(UserInfo.id).filter_by(password = hashed):
+                    db.session.query(UserInfo.id)
                     session["username"] = username
                     flash("You have logged in as %s" % username)
                     return redirect(url_for('members'))
                 flash("Password is incorect please try again")
-                return redirect(url_for("login"))
+                return redirect(url_for("login", status="disabled"))
             flash("Username is incorect please try again")
-            return redirect(url_for("login"))
-        return render_template('login.html')
+            return redirect(url_for("login", status="disabled"))
+        return render_template('login.html', status="disabled")
 
 
 
 
 #user_form route
-@app.route('/user', methods= ['post', 'get'])
+@app.route('/user', methods= ["POST", "GET"])
 def members():
     #only if user is in session otherwise redirect
     if "username" in session:
-        username = session["username"]
-        flash("You have logged in as %s" % username)
         return render_template('members.html')
     else:
-        return redirect(url_for("index"))
+        return redirect(url_for("index", status="disabled"))
 
 
 
-@app.route('/logout')
+@app.route('/logout', methods=["GET"])
 def logout():
-    session.pop("user", None)
-    flash("You have been logged out!", "info")
-    return redirect(url_for("index"))
+    if "username" in session:
+        session.pop("username", None)
+        flash("You have been logged out!")
+        resp = app.make_response(render_template('login.html', status="disabled"))
+        resp.set_cookie('token', expires=0)
+        return resp 
+    else:
+        flash("You have been already logged out")
+        return redirect(url_for("login"))
         
 
 #detects changes and updates on relode

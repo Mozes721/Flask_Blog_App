@@ -26,10 +26,11 @@
               <a class="nav-link" href="{{ url_for('login')}}">Login</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link disabled" href="{{ url_for('members')}}" tabindex="-1" >Your Posts</a>
+              <!-- for the status update if enabled or disabled -->
+              <a class="nav-link {{status}}" href="{{ url_for('members')}}" tabindex="-1" >Your Posts</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link disabled" href="{{ url_for('logout')}}" tabindex="-1" >Logout</a>
+              <a class="nav-link {{status}}" href="{{ url_for('logout')}}" tabindex="-1" >Logout</a>
             </li>
           </ul>
         </div>
