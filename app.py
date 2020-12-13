@@ -3,6 +3,14 @@ from passlib.hash import sha256_crypt
 from datetime import timedelta
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
+import datetime
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import backref
+from sqlalchemy import ForeignKey
+from werkzeug.exceptions import default_exceptions
+from datetime import datetime
+from sqlalchemy.orm import relationship
+
 
 app = Flask(__name__)
 #set the timeline the session can last
@@ -10,21 +18,54 @@ app.permanent_session_lifetime = timedelta(days=5)
 SECRET_KEY = 'secret key'
 
 #Configure Flask by providing the PostgreSQL URI 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:password@localhost/database'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Asebomu12@localhost/Mozes721'
 #needs to be placed after app is created
 
 
-from models import db, UserInfo
-#migrate the app and the models 
-migrate = Migrate(app, db)
-#assign to flask_script manager the app
-manager = Manager(app)
-#make final migration
-manager.add_command('db', MigrateCommand)
+###Model declaration
+db = SQLAlchemy(app)
+class Users(db.Model):
+    ###User model### 
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    username = db.Column(db.String(25), unique=True, nullable=False)
+    password = db.Column(db.String(120), nullable=False)
+    user_blog = db.relationship('Posts', backref='list', lazy=True)
+
+    def __init__(self, username, email, password):
+        self.username = username 
+        self.email = email
+        self.password = password
+        
+
+    def __repr__(self):
+        return '<User {}>'.format(self.username)
+
+class Posts(db.Model):
+    __tablename__ = 'posts'
+    id = db.Column(db.Integer, primary_key=True)
+    post_time = db.Column(db.DateTime, index=True)
+    title = db.Column(db.String(50), unique=True, nullable=False)
+    content = db.Column(db.String(500), unique=False, nullable=False)
+    parent_id = db.Column(db.Integer, ForeignKey('users.id'), nullable=False)
+
+    def __init__(self,post_time, title, content, parent_id):
+        self.post_time = post_time
+        self.title = title 
+        self.content = content
+        self.parent_id = parent_id
+    def __repr__(self):
+     return f"Post('{self.title}', '{self.post_time}')"
+
+# class Blogs(db.Model):
+#     pass 
+
+# db.create_all()
 
 
 
-
+#Routes
 @app.route('/', methods= ['post', 'get'])
 def index():
     #set the session as permanent with the given lifetime
@@ -32,6 +73,11 @@ def index():
     if "username" not in session:
         #status(disabled) so that logout and your posts are only accesible ones logged in
         return render_template('index.html', status="disabled")
+    else:
+        username = session["username"]
+        user_id = session
+        flash("You are already logged in as %s" % username)
+        return render_template("index.html")
 
 #register route
 @app.route('/register', methods= ["POST", "GET"])
@@ -52,11 +98,11 @@ def register():
                 flash("Please enter all input fields!")
                 return redirect(url_for("register", status="disabled"))
             #check if user already in database
-            if db.session.query(UserInfo.id).filter_by(email = email).scalar() or db.session.query(UserInfo.id).filter_by(username = username).scalar() is not None:
+            if db.session.query(Users.id).filter_by(email = email).scalar() or db.session.query(Users.id).filter_by(username = username).scalar() is not None:
                 flash("The email or username already is being used please choose a different one or login if your an existing user")
                 return redirect(url_for("register", status="disabled"))
             #if not add the new user and redirect
-            register_user = UserInfo(email = email, username = username, password = hashed)
+            register_user = Users(email = email, username = username, password = hashed)
             db.session.add(register_user)
             db.session.commit()
             #create a session while user logged in
@@ -83,10 +129,10 @@ def login():
                 flash("Please enter all input fields!")
                 return redirect(url_for("login", status="disabled"))
             #check if user already exists in database
-            if db.session.query(UserInfo.id).filter_by(username = username).scalar():
+            if db.session.query(Users.id).filter_by(username = username).scalar():
                 #check if password match specific user
-                if db.session.query(UserInfo.id).filter_by(password = hashed):
-                    db.session.query(UserInfo.id)
+                if db.session.query(Users.id).filter_by(password = hashed):
+                    db.session.query(Users.id)
                     session["username"] = username
                     flash("You have logged in as %s" % username)
                     return redirect(url_for('members'))
@@ -104,6 +150,22 @@ def login():
 def members():
     #only if user is in session otherwise redirect
     if "username" in session:
+        #get the user in current session
+        username = session["username"]
+        if request.method == "POST":
+            title = request.form.get("title")
+            content = request.form.get("content")
+            if title == '' or content == '':
+                flash("Please enter all input fields!")
+                return redirect(url_for("members"))
+            #retrive the user ID from Users class model 
+            user_id = db.session.query(Users.id).filter_by(username = username).scalar()
+            #add to posts database the coresponding values and assign to the right userID
+            post = Posts(post_time=datetime.now(), title=title, content=content, parent_id=user_id)      
+            db.session.add(post)
+            db.session.commit()
+            flash("Your post was sucesfully submited")
+            return redirect(url_for('members'))
         return render_template('members.html')
     else:
         return redirect(url_for("index", status="disabled"))

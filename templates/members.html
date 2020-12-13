@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+ 
 {% block title %}You have logged In{% endblock %}
 
 {% block content %}
@@ -13,5 +14,20 @@
   </nav>
   {% endif %}
   {% endwith %}
+    <div class="blog-title">
+      <h1>Write your Blog</h1>
+    </div>
+
+  <form method="post">
+  <div class="form-group">
+    <label for="title">Title Name</label>
+    <input name="title" type="title" class="form-control" id="title" placeholder="Your title name...">
+  </div>
+  <div class="form-group">
+    <label for="content">Blog Content</label>
+    <textarea name="content" type="content" class="form-control" id="content" rows="3"></textarea>
+  </div>
+  <button type="submit" class="btn btn-outline-secondary">Submit</button>
+</form>
   
 {% endblock %}

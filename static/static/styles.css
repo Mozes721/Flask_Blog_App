@@ -1,8 +1,10 @@
 body {
     background-color: #F3ECE2;
+    margin: 0;
 }
+
 #app-name {
-    font-size: 35px;
+    font-size: 34px;
     font-weight: bold;
     color:#a3def3;
 }
@@ -11,4 +13,11 @@ body {
     font-size: 20px;
     font-family: italic;
     color:#a3def3;
+
+}
+
+h1 {
+    text-align: center;
+    font-family: 'Courier New', monospace;
+  
 }
