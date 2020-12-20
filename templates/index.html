@@ -2,20 +2,58 @@
 {% block title %}Blog App{% endblock %}
 
 {% block content %}
-<nav id="navbar-example2" class="navbar navbar-light bg-light">
-  <a class="navbar-brand" href="#">All Published Blogs</a>
-  
-</nav>
-<div data-spy="scroll" data-target="#navbar-example2" data-offset="0">
-  <h4 id="fat">@fat</h4>
-  <p>...</p>
-  <h4 id="mdo">@mdo</h4>
-  <p>...</p>
-  <h4 id="one">one</h4>
-  <p>...</p>
-  <h4 id="two">two</h4>
-  <p>...</p>
-  <h4 id="three">three</h4>
-  <p>...</p>
+<style>
+ 
+  .container {
+    padding: 5px;
+    width: 90%;
+  }
+  .card {
+    margin: 10px;
+  }
+</style>
+
+
+  <div class="input-group input-group-lg">
+  <div class="input-group-prepend">
+    <span class="input-group-text" id="inputGroup-sizing-lg">Username</span>
+  </div>
+  <input type="text" class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-lg">
+  <div class="input-group-append">
+    <button class="btn btn-outline-secondary" type="button" id="button-addon2">Button</button>
+  </div>
 </div>
+<!-- <div class="container">
+  <div class="user-name">
+    <h2>Sam</h2>
+    <div class="title">
+
+    </div>
+  </div>
+</div> -->
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      Username
+    </div>
+    <div class="card-body">
+      <h5 class="card-title">Card title</h5>
+      <h6 class="card-subtitle mb-2 text-muted">Date time</h6>
+      <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      Username
+    </div>
+    <div class="card-body">
+      <h5 class="card-title">Card title</h5>
+      <h6 class="card-subtitle mb-2 text-muted">Date time</h6>
+      <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+    </div>
+  </div>
+</div>
+  
+
 {% endblock %}

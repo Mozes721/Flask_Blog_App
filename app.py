@@ -1,16 +1,13 @@
 from flask import Flask, render_template, request, session, redirect, url_for, flash
 from passlib.hash import sha256_crypt
 from datetime import timedelta
-from flask_script import Manager
-from flask_migrate import Migrate, MigrateCommand
 import datetime
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import backref
-from sqlalchemy import ForeignKey
-from werkzeug.exceptions import default_exceptions
+from sqlalchemy import ForeignKey, update
 from datetime import datetime
-from sqlalchemy.orm import relationship
-
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField ,SubmitField
 
 app = Flask(__name__)
 #set the timeline the session can last
@@ -63,6 +60,10 @@ class Posts(db.Model):
 
 # db.create_all()
 
+class PostEditForm(FlaskForm):
+    title = StringField('title')
+    content = TextAreaField('content')
+    submit = SubmitField('submit')
 
 
 #Routes
@@ -138,7 +139,7 @@ def login():
                     return redirect(url_for('members'))
                 flash("Password is incorect please try again")
                 return redirect(url_for("login", status="disabled"))
-            flash("Username is incorect please try again")
+            flash("Username or password is incorect please try again or register!")
             return redirect(url_for("login", status="disabled"))
         return render_template('login.html', status="disabled")
 
@@ -152,23 +153,67 @@ def members():
     if "username" in session:
         #get the user in current session
         username = session["username"]
+        #retrive the user ID from Users class model 
+        user_id = db.session.query(Users.id).filter_by(username = username).scalar()
+        print(user_id)
+
         if request.method == "POST":
             title = request.form.get("title")
             content = request.form.get("content")
             if title == '' or content == '':
                 flash("Please enter all input fields!")
                 return redirect(url_for("members"))
-            #retrive the user ID from Users class model 
-            user_id = db.session.query(Users.id).filter_by(username = username).scalar()
             #add to posts database the coresponding values and assign to the right userID
-            post = Posts(post_time=datetime.now(), title=title, content=content, parent_id=user_id)      
+            post = Posts(post_time=datetime.today().replace(microsecond=0), title=title, content=content, parent_id=user_id)      
             db.session.add(post)
             db.session.commit()
             flash("Your post was sucesfully submited")
             return redirect(url_for('members'))
-        return render_template('members.html')
+        user_posts = db.session.query(Posts).filter_by(parent_id = user_id).all()
+        print(user_posts)
+        
+        return render_template('members.html', user= username, data=user_posts)
     else:
         return redirect(url_for("index", status="disabled"))
+
+#Edit Post
+@app.route('/edit_post/<string:id>', methods= ["POST", "GET"])
+def edit_post(id):
+    user_posts = db.session.query(Posts).filter_by(id = id).first()
+    print(user_posts)
+    form = PostEditForm()
+
+    form.title.data = user_posts('title')
+    form.content.data = user_posts('content')
+
+    if request.method == "POST" and form.validate():
+        title = form.title.data
+        content = form.content.data
+        if title == '' or content == '':
+            flash("Please enter all input fields!")
+            return redirect(url_for("members"))
+        #add to posts database the coresponding values and assign to the right userID
+        user_posts.update(post_time=datetime.today().replace(microsecond=0), title=title, content=content)
+            
+        #post = Posts(id=id, post_time=datetime.today().replace(microsecond=0), title=title, content=content).update()    
+        db.session.add(user_posts)
+        db.session.commit()
+        flash("Your post was sucesfully submited")
+        return render_template('edit_post.html',form=form)
+
+#Delete Post
+@app.route('/delete_post/<string:id>', methods=['POST'])
+def delete_post(id):
+    if "username" in session:
+        #create cursor
+        delete_post = db.session.query(Posts).filter_by(id = id).delete()
+        db.session.commit()
+
+        flash("Post deleted")
+        return redirect(url_for('members'))
+    else:
+        flash("You have to login as a user of the post!")
+        return redirect(url_for("login", status="disabled"))
 
 
 

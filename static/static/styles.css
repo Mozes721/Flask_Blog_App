@@ -21,3 +21,7 @@ h1 {
     font-family: 'Courier New', monospace;
   
 }
+
+.input-group {
+    padding: 5px;
+}
