@@ -15,7 +15,7 @@ app.permanent_session_lifetime = timedelta(days=5)
 SECRET_KEY = 'secret key'
 
 #Configure Flask by providing the PostgreSQL URI 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Asebomu12@localhost/Mozes721'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:yourpassword@localhost/database'
 #needs to be placed after app is created
 
 
