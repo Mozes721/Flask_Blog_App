@@ -18,7 +18,7 @@ app.permanent_session_lifetime = timedelta(days=5)
 SECRET_KEY = 'secret key'
 
 #Configure Flask by providing the PostgreSQL URI 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Asebomu12@localhost/Mozes721'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:password@localhost/Database'
 #needs to be placed after app is created
 
 
@@ -186,6 +186,7 @@ def edit_post(id):
     #populate PostForm with the existing fields
     form = PostForm(obj=post)
     if request.method == "POST":
+        ### More tedious way of updating values of post ###
         # title = form.title.data 
         # content = form.content.data
         #db.session.query(Posts).filter_by(id = id).update({Posts.post_time: form.post_time, Posts.title: title, Posts.content: content})
