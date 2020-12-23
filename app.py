@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, session, redirect, url_for, flash
+from flask_wtf import csrf
 from passlib.hash import sha256_crypt
 from datetime import timedelta
 import datetime
@@ -7,15 +8,16 @@ from sqlalchemy.orm import backref
 from sqlalchemy import ForeignKey, update
 from datetime import datetime
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField ,SubmitField
+from wtforms import StringField, TextAreaField ,SubmitField, validators
+from wtforms.fields.core import DateField
 
 app = Flask(__name__)
 #set the timeline the session can last
 app.permanent_session_lifetime = timedelta(days=5)
+
 SECRET_KEY = 'secret key'
 
 #Configure Flask by providing the PostgreSQL URI 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:yourpassword@localhost/database'
 #needs to be placed after app is created
 
 
@@ -60,10 +62,11 @@ class Posts(db.Model):
 
 # db.create_all()
 
-class PostEditForm(FlaskForm):
-    title = StringField('title')
-    content = TextAreaField('content')
-    submit = SubmitField('submit')
+class PostForm(FlaskForm):
+    post_time = datetime.today().replace(microsecond=0)
+    title = StringField('title', [validators.InputRequired()])
+    content = TextAreaField('content', [validators.InputRequired()])
+    submit = SubmitField('Submit')
 
 
 #Routes
@@ -147,66 +150,57 @@ def login():
 
 
 #user_form route
-@app.route('/user', methods= ["POST", "GET"])
+@app.route('/user/', methods= ["POST", "GET"])
 def members():
     #only if user is in session otherwise redirect
     if "username" in session:
         #get the user in current session
         username = session["username"]
-        #retrive the user ID from Users class model 
+        #retrive the user ID from Users class model and as well all he posts from the user
         user_id = db.session.query(Users.id).filter_by(username = username).scalar()
-        print(user_id)
+        user_posts = db.session.query(Posts).filter_by(parent_id=user_id).all()
+        #initiate declarative form class
+        form = PostForm()
+        #get the values from the input fields
+        title = form['title'].data
+        content = form['content'].data
 
         if request.method == "POST":
-            title = request.form.get("title")
-            content = request.form.get("content")
-            if title == '' or content == '':
-                flash("Please enter all input fields!")
-                return redirect(url_for("members"))
             #add to posts database the coresponding values and assign to the right userID
-            post = Posts(post_time=datetime.today().replace(microsecond=0), title=title, content=content, parent_id=user_id)      
+            post = Posts(post_time=form.post_time ,title=title, content=content, parent_id=user_id)
             db.session.add(post)
             db.session.commit()
             flash("Your post was sucesfully submited")
-            return redirect(url_for('members'))
-        user_posts = db.session.query(Posts).filter_by(parent_id = user_id).all()
-        print(user_posts)
-        
-        return render_template('members.html', user= username, data=user_posts)
+            return redirect(url_for('members', form=form, data=user_posts))
+        return render_template('members.html', form=form, data=user_posts)
     else:
         return redirect(url_for("index", status="disabled"))
-
 #Edit Post
 @app.route('/edit_post/<string:id>', methods= ["POST", "GET"])
 def edit_post(id):
-    user_posts = db.session.query(Posts).filter_by(id = id).first()
-    print(user_posts)
-    form = PostEditForm()
-
-    form.title.data = user_posts('title')
-    form.content.data = user_posts('content')
-
-    if request.method == "POST" and form.validate():
-        title = form.title.data
-        content = form.content.data
-        if title == '' or content == '':
-            flash("Please enter all input fields!")
-            return redirect(url_for("members"))
-        #add to posts database the coresponding values and assign to the right userID
-        user_posts.update(post_time=datetime.today().replace(microsecond=0), title=title, content=content)
-            
-        #post = Posts(id=id, post_time=datetime.today().replace(microsecond=0), title=title, content=content).update()    
-        db.session.add(user_posts)
+    #get the post values by id
+    post = db.session.query(Posts).filter_by(id = id).first()
+    #fetch the id of the post
+    post_id = db.session.query(Posts.id).filter_by(id = id).first()
+    #populate PostForm with the existing fields
+    form = PostForm(obj=post)
+    if request.method == "POST":
+        # title = form.title.data 
+        # content = form.content.data
+        #db.session.query(Posts).filter_by(id = id).update({Posts.post_time: form.post_time, Posts.title: title, Posts.content: content})
+        form.populate_obj(post)
+        db.session.add(post)
         db.session.commit()
-        flash("Your post was sucesfully submited")
-        return render_template('edit_post.html',form=form)
+        flash("The post has been updatet")
+        return redirect(url_for('members'))
+    return render_template('edit_post.html',id=post_id, form=form)
 
 #Delete Post
 @app.route('/delete_post/<string:id>', methods=['POST'])
 def delete_post(id):
     if "username" in session:
         #create cursor
-        delete_post = db.session.query(Posts).filter_by(id = id).delete()
+        db.session.query(Posts).filter_by(id = id).delete()
         db.session.commit()
 
         flash("Post deleted")
