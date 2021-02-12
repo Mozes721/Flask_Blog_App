@@ -25,3 +25,8 @@ h1 {
 .input-group {
     padding: 5px;
 }
+
+.card-header {
+    font-size: 25px;
+    font-family:Georgia, 'Times New Roman', Times, serif;
+}

@@ -11,49 +11,60 @@
   .card {
     margin: 10px;
   }
+  .card-header {
+    font-size: 25px; 
+    font-family:Georgia, 'Times New Roman', Times, serif;
+  }
 </style>
 
-
+<form action="/search" method="post">
   <div class="input-group input-group-lg">
   <div class="input-group-prepend">
     <span class="input-group-text" id="inputGroup-sizing-lg">Username</span>
   </div>
-  <input type="text" class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-lg">
-  <div class="input-group-append">
-    <button class="btn btn-outline-secondary" type="button" id="button-addon2">Button</button>
-  </div>
-</div>
-<!-- <div class="container">
-  <div class="user-name">
-    <h2>Sam</h2>
-    <div class="title">
-
-    </div>
-  </div>
-</div> -->
-<div class="container">
-  <div class="card">
-    <div class="card-header">
-      Username
-    </div>
-    <div class="card-body">
-      <h5 class="card-title">Card title</h5>
-      <h6 class="card-subtitle mb-2 text-muted">Date time</h6>
-      <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">
-      Username
-    </div>
-    <div class="card-body">
-      <h5 class="card-title">Card title</h5>
-      <h6 class="card-subtitle mb-2 text-muted">Date time</h6>
-      <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-    </div>
-  </div>
-</div>
   
+    <input name="username" type="text" class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-lg" >
+      <div class="input-group-append">
+        <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Search</button>
+      </div>
+</div>
+</form>
+{% with user = get_flashed_messages()  %}
+  {% if user %}
+    <div class="alert alert-secondary" role="alert">
+        {% for usr in user %}
+            <p>{{ usr }}</p>
+        {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 
+<div class="container">
+  {% for post in posts.items %}
+  <div class="card">
+    
+    <div class="card-header">
+      {{ post.username }}
+    </div>
+      
+
+    <div class="card-body">
+      <h5 class="card-title">{{ post.title }}</h5>
+      <h6 class="card-subtitle mb-2 text-muted">{{ post.post_time }}</h6>
+      <p class="card-text">{{ post.content }}</p>
+    </div>
+  </div>
+  {% endfor %}
+  {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+    
+      {% if page_num %}
+          {% if posts.page == page_num %}
+            <a class="btn btn-info mb-4" href="{{url_for('index', page=page_num)}}">{{ page_num }}</a>
+          {% else %}
+            <a class="btn btn-outline-info mb-4" href="{{url_for('index', page=page_num)}}">{{ page_num }}</a>
+          {% endif %}
+          {% else %}
+          ...
+        {% endif %}
+  {% endfor %}
 {% endblock %}

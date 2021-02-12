@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+
+{% block title %}Search UserPosts{% endblock %}
+
+{% block content %}
+
+<style>
+ 
+  .container {
+    padding: 5px;
+    width: 90%;
+  }
+  .card {
+    margin: 10px;
+  }
+  .card-header {
+    font-size: 25px; 
+    font-family:Georgia, 'Times New Roman', Times, serif;
+  }
+</style>
+
+{% if usr %}
+<h2 class="mb-3">Found posts by: <span class="badge bg-success">{{ usr }}</span></h2>
+{% endif %}
+
+<div class="container">
+  {% for post in posts %}
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">{{ post.title }}</h5>
+      <h6 class="card-subtitle mb-2 text-muted">{{ post.post_time }}</h6>
+      <p class="card-text">{{ post.content }}</p>
+    </div>
+  </div>
+{% endfor %}
+{% endblock %}

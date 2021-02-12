@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, session, redirect, url_for, flash
-from flask_wtf import csrf
 from passlib.hash import sha256_crypt
 from datetime import timedelta
 import datetime
@@ -9,7 +8,8 @@ from sqlalchemy import ForeignKey, update
 from datetime import datetime
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField ,SubmitField, validators
-from wtforms.fields.core import DateField
+from sqlalchemy import desc
+from py_paginator import Paginator
 
 app = Flask(__name__)
 #set the timeline the session can last
@@ -18,7 +18,7 @@ app.permanent_session_lifetime = timedelta(days=5)
 SECRET_KEY = 'secret key'
 
 #Configure Flask by providing the PostgreSQL URI 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:password@localhost/Database'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Asebomu12@localhost/Mozes721'
 #needs to be placed after app is created
 
 
@@ -56,12 +56,8 @@ class Posts(db.Model):
         self.content = content
         self.parent_id = parent_id
     def __repr__(self):
-     return f"Post('{self.title}', '{self.post_time}')"
+       return f"Post('{self.title}', '{self.post_time}')"
 
-# class Blogs(db.Model):
-#     pass 
-
-# db.create_all()
 
 class PostForm(FlaskForm):
     post_time = datetime.today().replace(microsecond=0)
@@ -71,19 +67,37 @@ class PostForm(FlaskForm):
 
 
 #Routes
-@app.route('/', methods= ['post', 'get'])
+@app.route('/')
 def index():
-    #set the session as permanent with the given lifetime
-    session.permanent = True
+    #all posts
+    page = request.args.get('page', 1, type=int)
+    all_posts = db.session.query(Posts.post_time, Posts.title, Posts.content, Users.username).join(Posts)\
+        .order_by(Posts.post_time.desc()).paginate(page=page, per_page=3)
+    
+    session.permanent = True    
     if "username" not in session:
         #status(disabled) so that logout and your posts are only accesible ones logged in
-        return render_template('index.html', status="disabled")
+        return render_template('index.html', status="disabled", posts=all_posts)
     else:
         username = session["username"]
-        user_id = session
         flash("You are already logged in as %s" % username)
-        return render_template("index.html")
-
+            
+        return render_template("index.html", posts=all_posts)
+@app.route('/search', methods=['GET', 'POST'])
+def search():
+    if request.method == "POST":
+        username = request.form.get("username")
+        if db.session.query(Users.id).filter_by(username = username).scalar():
+            user_id = db.session.query(Users.id).filter_by(username = username).scalar()
+            user_posts = db.session.query(Posts).filter_by(parent_id=user_id)\
+                .order_by(Posts.post_time.desc())
+            return render_template('search.html', posts=user_posts, usr=username)
+        else:
+            flash("There is no post by  %s" % username)
+            return redirect(url_for('index'))
+    
+        
+    
 #register route
 @app.route('/register', methods= ["POST", "GET"])
 def register():
@@ -158,8 +172,11 @@ def members():
         #get the user in current session
         username = session["username"]
         #retrive the user ID from Users class model and as well all he posts from the user
+        page = request.args.get('page', 1, type=int)
+        
         user_id = db.session.query(Users.id).filter_by(username = username).scalar()
-        user_posts = db.session.query(Posts).filter_by(parent_id=user_id).all()
+        user_posts = db.session.query(Posts).filter_by(parent_id=user_id)\
+            .order_by(Posts.post_time.desc()).paginate(page=page, per_page=3)
         #initiate declarative form class
         form = PostForm()
         #get the values from the input fields
@@ -172,8 +189,8 @@ def members():
             db.session.add(post)
             db.session.commit()
             flash("Your post was sucesfully submited")
-            return redirect(url_for('members', form=form, data=user_posts))
-        return render_template('members.html', form=form, data=user_posts)
+            return redirect(url_for('members', form=form, posts=user_posts))
+        return render_template('members.html', form=form, posts=user_posts)
     else:
         return redirect(url_for("index", status="disabled"))
 #Edit Post
@@ -186,10 +203,6 @@ def edit_post(id):
     #populate PostForm with the existing fields
     form = PostForm(obj=post)
     if request.method == "POST":
-        ### More tedious way of updating values of post ###
-        # title = form.title.data 
-        # content = form.content.data
-        #db.session.query(Posts).filter_by(id = id).update({Posts.post_time: form.post_time, Posts.title: title, Posts.content: content})
         form.populate_obj(post)
         db.session.add(post)
         db.session.commit()
