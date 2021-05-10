@@ -3,7 +3,6 @@ from passlib.hash import sha256_crypt
 from datetime import timedelta
 import datetime
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import backref
 from sqlalchemy import ForeignKey, update
 from datetime import datetime
 from flask_wtf import FlaskForm
