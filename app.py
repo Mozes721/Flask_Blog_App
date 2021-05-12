@@ -26,10 +26,14 @@ db = SQLAlchemy(app)
 class Users(db.Model):
     ###User model### 
     __tablename__ = 'users'
+    #unique user id 
     id = db.Column(db.Integer, primary_key=True)
+    #Each field is specified as a class attribute, 
+    #and each attribute maps to a database column.
     email = db.Column(db.String(120), unique=True, nullable=False)
     username = db.Column(db.String(25), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
+    #make a relationship with 'Posts' model 
     user_blog = db.relationship('Posts', backref='list', lazy=True)
 
     def __init__(self, username, email, password):
@@ -47,6 +51,8 @@ class Posts(db.Model):
     post_time = db.Column(db.DateTime, index=True)
     title = db.Column(db.String(50), unique=True, nullable=False)
     content = db.Column(db.String(500), unique=False, nullable=False)
+    #find the parent id by using ForeignKey attribute to 
+    #specify which property is the foreign key in a relationship
     parent_id = db.Column(db.Integer, ForeignKey('users.id'), nullable=False)
 
     def __init__(self,post_time, title, content, parent_id):
@@ -56,6 +62,7 @@ class Posts(db.Model):
         self.parent_id = parent_id
     def __repr__(self):
        return f"Post('{self.title}', '{self.post_time}')"
+
 
 
 class PostForm(FlaskForm):
@@ -69,19 +76,24 @@ class PostForm(FlaskForm):
 @app.route('/')
 def index():
     #all posts
+    #get first page of all posts 
     page = request.args.get('page', 1, type=int)
+    #from the Posts class get all the existin posts attributes 
+    #as well the Users.username because its a parent of Posts model
+    #join the posts by time and implement pagination
     all_posts = db.session.query(Posts.post_time, Posts.title, Posts.content, Users.username).join(Posts)\
         .order_by(Posts.post_time.desc()).paginate(page=page, per_page=3)
+    #make session constant
+    session.permanent = True
     
-    session.permanent = True    
     if "username" not in session:
         #status(disabled) so that logout and your posts are only accesible ones logged in
         return render_template('index.html', status="disabled", posts=all_posts)
     else:
+        #otherwise prompt your logged in
         username = session["username"]
         flash("You are already logged in as %s" % username)
-            
-        return render_template("index.html", posts=all_posts)
+    
 @app.route('/search', methods=['GET', 'POST'])
 def search():
     if request.method == "POST":
@@ -101,11 +113,13 @@ def search():
 @app.route('/register', methods= ["POST", "GET"])
 def register():
     if "username" in session:
+            #always pre check if user in sesion 
             username = session["username"]
             flash("You are already logged in as %s" % username)
             return render_template("register.html")
     else:
         if request.method == "POST":
+            #if post get the the forms values and hash the password
             email = request.form.get("email")
             username = request.form.get("username")
             password = request.form.get("password")
@@ -115,21 +129,25 @@ def register():
             if email == '' or username == '' or password == '':
                 flash("Please enter all input fields!")
                 return redirect(url_for("register", status="disabled"))
-            #check if user already in database
+            #query Users.id by email, username if value is Not Null promt user exists
             if db.session.query(Users.id).filter_by(email = email).scalar() or db.session.query(Users.id).filter_by(username = username).scalar() is not None:
                 flash("The email or username already is being used please choose a different one or login if your an existing user")
                 return redirect(url_for("register", status="disabled"))
-            #if not add the new user and redirect
+            #if not make a new User instance with values 
             register_user = Users(email = email, username = username, password = hashed)
             db.session.add(register_user)
             db.session.commit()
             #create a session while user logged in
             session["username"] = username
             flash("You have logged in as %s" % username)
+            #when logged in redirect to memebers page showcasing your username
             return redirect(url_for('members', usr=username))
+        #main page of register 
+        #disable your posts/logout if not logged in 
         return render_template('register.html', status="disabled")
 
 
+#login route
 #login route
 @app.route('/login', methods= ["POST", "GET"])
 def login():
@@ -146,16 +164,19 @@ def login():
             if username == '' or password == '':
                 flash("Please enter all input fields!")
                 return redirect(url_for("login", status="disabled"))
-            #check if user already exists in database
+            #check if user already exists in database by username
             if db.session.query(Users.id).filter_by(username = username).scalar():
                 #check if password match specific user
                 if db.session.query(Users.id).filter_by(password = hashed):
                     db.session.query(Users.id)
                     session["username"] = username
                     flash("You have logged in as %s" % username)
+                    #if correct enter your members page
                     return redirect(url_for('members'))
+                #otherwise flash wrong password
                 flash("Password is incorect please try again")
                 return redirect(url_for("login", status="disabled"))
+            #flash username or password incorect 
             flash("Username or password is incorect please try again or register!")
             return redirect(url_for("login", status="disabled"))
         return render_template('login.html', status="disabled")
@@ -228,9 +249,13 @@ def delete_post(id):
 @app.route('/logout', methods=["GET"])
 def logout():
     if "username" in session:
+        #pop the user out of session 
         session.pop("username", None)
         flash("You have been logged out!")
+        #create a response variable that will remove logged user
+        #redirect to loggin page and disable status
         resp = app.make_response(render_template('login.html', status="disabled"))
+        #expire the user session
         resp.set_cookie('token', expires=0)
         return resp 
     else:
