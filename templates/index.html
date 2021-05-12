@@ -17,18 +17,20 @@
   }
 </style>
 
+<!-- Search form creation  -->
 <form action="/search" method="post">
   <div class="input-group input-group-lg">
   <div class="input-group-prepend">
     <span class="input-group-text" id="inputGroup-sizing-lg">Username</span>
   </div>
-  
+<!--     input box from where we search for a particular users posts -->
     <input name="username" type="text" class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-lg" >
       <div class="input-group-append">
         <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Search</button>
       </div>
 </div>
 </form>
+<!--get flashed message based on event in app.py-->
 {% with user = get_flashed_messages()  %}
   {% if user %}
     <div class="alert alert-secondary" role="alert">
@@ -40,6 +42,7 @@
 {% endwith %}
 
 <div class="container">
+<!--get all avalable posts and place it values in its corresponding div-->
   {% for post in posts.items %}
   <div class="card">
     
@@ -55,6 +58,7 @@
     </div>
   </div>
   {% endfor %}
+<!--pagination buttons-->
   {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
     
       {% if page_num %}
