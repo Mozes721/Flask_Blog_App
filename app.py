@@ -148,7 +148,6 @@ def register():
 
 
 #login route
-#login route
 @app.route('/login', methods= ["POST", "GET"])
 def login():
     #check if user already in session(logged in)
