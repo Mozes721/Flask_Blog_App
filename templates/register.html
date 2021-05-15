@@ -4,9 +4,10 @@
 {% block content %}
 
 <h1>Registration page</h1>
-
+<!-- use get_flaskeg_messages method -->
 {% with messages = get_flashed_messages()  %}
   {% if messages %}
+  <!-- promt the message with bootstrap styling  -->
     <div class="alert alert-secondary" role="alert">
         {% for msg in messages %}
             <p>{{ msg }}</p>
@@ -16,6 +17,7 @@
 {% endwith %}
 
 <form method="post">
+  <!--form-group is part of bootstrap class  -->
     <div class="form-group">
       <label for="InputEmail">Email address</label>
       <input name="email" type="email" class="form-control" id="InputEmail" aria-describedby="emailHelp">
